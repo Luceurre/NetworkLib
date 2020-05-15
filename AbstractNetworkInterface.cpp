@@ -10,8 +10,10 @@ AbstractNetworkInterface::AbstractNetworkInterface() {
     buffer_size = 0;
     buffer = nullptr;
     flags = 0;
+    max_attempt = 0;
     bufferSizeIsSet = false;
     listening = false;
+    wait_til_retry = 0;
 
     addr_len = sizeof their_addr;
 }
@@ -40,6 +42,7 @@ void AbstractNetworkInterface::recv_packet() {
         int status;
         void* local_buffer = malloc(buffer_size);
 
+        logFile << "Socket is listening..." << endl;
         if (connected) {
             status = recv(socket_fd, local_buffer, buffer_size, flags);
         } else {
@@ -78,18 +81,32 @@ void AbstractNetworkInterface::setBufferSize(size_t buffer_size) {
 }
 
 AbstractNetworkInterface::~AbstractNetworkInterface() {
+    // TODO : free la queue
+    if (recv_thread.joinable())
+        recv_thread.join();
     free(buffer);
 }
 
 void AbstractNetworkInterface::handle_protocol_queue() {
-    // TODO : add some queue refresh rate
-    while (!protocolQueue.empty()) {
-        std::unique_lock<std::mutex> lock(recv_mutex);
-        MyMessage p = protocolQueue.front();
-        protocolQueue.pop();
-        lock.unlock();
+    while (listening || !protocolQueue.empty()) {
+        // TODO : add some queue refresh rate
+        while (!protocolQueue.empty()) {
+            std::unique_lock<std::mutex> lock(recv_mutex);
+            MyMessage p = protocolQueue.front();
+            protocolQueue.pop();
+            lock.unlock();
 
-        handle_msg(p);
-        free(p.protocol);
+            handle_msg(p);
+            free(p.protocol);
+        }
     }
+
+}
+
+void AbstractNetworkInterface::send_packet(void *buffer, MyAddr addr) {
+    send_packet(buffer, buffer_size, addr);
+}
+
+void AbstractNetworkInterface::run_recv() {
+    recv_thread = std::thread(&AbstractNetworkInterface::recv_packet, this);
 }

@@ -8,13 +8,24 @@
 
 #include "GameNetworkInterface.h"
 
-#define HOSTNAME "127.0.0.1"
+#define HOSTNAME "cxhome.org"
 
 class GameClientNetworkInterface : public GameNetworkInterface {
 protected:
     void handle_recv() override;
+    bool isConnectedToServer = false;
+    std::thread queue_thread;
 public:
+    GameClientNetworkInterface();
+    ~GameClientNetworkInterface();
+
     void initialize_socket() override;
+    void handle_msg(MyMessage msg) override;
+
+    bool try_connect();
+
+    void callQueue();
+    void run_queue();
 };
 
 

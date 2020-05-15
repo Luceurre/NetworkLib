@@ -8,6 +8,8 @@
 #include "AbstractNetworkInterface.h"
 
 #define PORT "27030"
+#define MAX_ATTEMPT 3
+#define WAIT_TIME 1
 
 enum Protocol {
     HEALTH_CHECK,

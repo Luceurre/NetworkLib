@@ -7,6 +7,7 @@
 void GameServerNetworkInterface::initialize_socket() {
     GameNetworkInterface::initialize_socket();
     socket_fd = create_udp_server_socket(port);
+    logFile.open("server_log.txt");
 }
 
 void GameServerNetworkInterface::handle_recv() {
@@ -19,18 +20,11 @@ void GameServerNetworkInterface::handle_recv() {
     cout << (char *) buffer << endl;
 }
 
-void GameServerNetworkInterface::run_recv() {
-    listening = true;
-    recvThread = std::thread(&GameServerNetworkInterface::recv_packet, this);
-}
 
 GameServerNetworkInterface::~GameServerNetworkInterface() {
-    if (recvThread.joinable())
-        recvThread.join();
-}
-
-void GameServerNetworkInterface::addClient(MyAddr addr) {
-
+    logFile.close();
+    if (queue_thread.joinable())
+        queue_thread.join();
 }
 
 void GameServerNetworkInterface::callQueue() {
@@ -39,6 +33,24 @@ void GameServerNetworkInterface::callQueue() {
 
 void GameServerNetworkInterface::handle_msg(MyMessage msg) {
     GameNetworkInterface::handle_msg(msg);
+    Protocol aProtocol = *(Protocol *)msg.protocol;
 
-    cout << "I'm server" << endl;
+    if (aProtocol == CONNECT) {
+        // Une nouvelle connection ?
+        add_client(msg.sender);
+        // On prévient le client qu'il a été ajouté
+        Protocol answer = CONNECT;
+        send_packet(&answer, msg.sender);
+    }
 }
+
+void GameServerNetworkInterface::add_client(MyAddr clientAddr) {
+    // TODO : check for duplicate
+    cout << "added client!" << endl;
+    clientsAddr.push_back(clientAddr);
+}
+
+void GameServerNetworkInterface::run_queue() {
+    queue_thread = std::thread(&GameServerNetworkInterface::handle_protocol_queue, this);
+}
+

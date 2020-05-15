@@ -12,19 +12,21 @@
 class GameServerNetworkInterface : public GameNetworkInterface{
 public:
     void initialize_socket() override;
-    void run_recv();
     ~GameServerNetworkInterface();
 
     void callQueue();
-
+    void run_queue();
 protected:
+    std::thread queue_thread;
     void handle_recv() override;
-    std::thread recvThread;
 
     std::vector<MyAddr> clientsAddr;
-    void addClient(MyAddr addr);
     bool listening;
     void handle_msg(MyMessage msg) override;
+
+    // Server side method
+    // Ajoute un client à la liste des clients enregistrés
+    void add_client(MyAddr clientAddr);
 };
 
 

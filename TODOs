@@ -1,0 +1,5 @@
+TODO : add a loop around handle_queue + stop conditions
+TODO : implement health checks thread
+
+TODO : link interface to an actual Scene
+TODO : merge with AtelierProg
